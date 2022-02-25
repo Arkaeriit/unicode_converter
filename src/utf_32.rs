@@ -83,3 +83,10 @@ fn cut_u32(n: u32) -> [u8; 4] {
     return ret;
 }
 
+#[test]
+fn test_data_content() {
+    let data: [u8; 4] = [0, 1, 2, 3];
+    let utf_32_glyph = Utf32::from_bytes(data.as_slice(), false);
+    assert_eq!(utf_32_glyph.data[0], 0x03020100);
+}
+
