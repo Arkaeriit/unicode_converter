@@ -1,0 +1,14 @@
+[package]
+name = "unicode_converter"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "unicode_converter"
+path = "src/unicode_converter_lib.rs"
+
+[[bin]]
+name = "unicode_converter"
+path = "src/main.rs"
+
+[dependencies]
