@@ -7,3 +7,7 @@ pub mod utf_32;
 /// contains the common capabilities for all Unicode encodings.
 pub mod unicode_encoding;
 
+/// The UTF-8 module is quite important as it can be used to convert Rust's
+/// strings into the other unicode encoding types.
+pub mod utf_8;
+
