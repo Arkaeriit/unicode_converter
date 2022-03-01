@@ -8,6 +8,7 @@ use crate::utf_32::Utf32;
 /// UTF-32 and writing it to or reading it from a file. Furthermore, it is also
 /// possible to convert from and to a slice of bytes.
 pub trait UnicodeEncoding {
+    // Function that need to be implemented by the various types.
     /// The function `from_utf_32` takes a Utf32 struct and convert its content
     /// to the desired encoding. This function should always be implemented by
     /// the encoding's type.
@@ -27,7 +28,12 @@ pub trait UnicodeEncoding {
     /// encoding's type.
     fn to_bytes(&self, big_endian: bool) -> Vec<u8>;
 
-
+    // Functions implemented in this trait
+    /// Tell if the encoded content is equal to an other encoded content,
+    /// regardless of the chosen encoding.
+    fn content_eq<T: UnicodeEncoding>(&self, other: &T) -> bool {
+        return self.to_utf_32() == other.to_utf_32();
+    }
     //fn from_file(filename: &str) -> Self;
     //fn to_file(data: &Self, filename: &str);
 }

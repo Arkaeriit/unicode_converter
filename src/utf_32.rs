@@ -10,6 +10,12 @@ pub struct Utf32 {
     data: Vec<u32>
 }
 
+impl PartialEq for Utf32 {
+    fn eq(&self, other: &Utf32) -> bool {
+        return self.data == other.data;
+    }
+}
+
 impl Clone for Utf32 {
     fn clone(&self) -> Utf32 {
         let new_data = self.data.clone();
