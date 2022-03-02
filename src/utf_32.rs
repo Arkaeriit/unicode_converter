@@ -7,7 +7,7 @@ use crate::unicode_encoding::UnicodeEncoding;
 /// A very basic wrapper for UTF-32 encoded data.
 pub struct Utf32 {
     /// A list of the Unicode glyphs as codepoints as defined in UTF-32.
-    data: Vec<u32>
+    pub data: Vec<u32> // TODO: Not public but use itterator instead
 }
 
 impl PartialEq for Utf32 {
