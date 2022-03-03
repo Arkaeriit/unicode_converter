@@ -1,10 +1,49 @@
 use crate::unicode_encoding::UnicodeEncoding;
+use crate::endian_aware_byte_streamer;
 use crate::utf_32::Utf32;
 
 /// A very basic wrapper for UTF-16 encoded data.
-pub struct Utf8 {
+pub struct Utf16 {
     /// The list of UTF-16 encoded bytes.
     data: Vec<u16>
+}
+
+impl UnicodeEncoding for Utf16 {
+    /// Convert UTF-32 data to UTF-16.
+    fn from_utf_32(data_utf_32: &Utf32) -> Self {
+        let mut data: Vec<u16> = Vec::new();
+        for glyph in &data_utf_32.data {
+            for new_glyph in utf_32_glyph_to_utf_16(*glyph) {
+                data.push(new_glyph);
+            }
+        }
+        return Utf16{data: data};
+    }
+
+    /// Convert UTF-16 data to UTF-32.
+    fn to_utf_32(&self) -> Utf32 {
+        let mut index: usize = 0;
+        let mut data: Vec<u32> = Vec::new();
+        while index < self.data.len() {
+            let (glyph, len) = utf_16_glyph_to_utf_32(&self.data, index);
+            data.push(glyph);
+            index += len;
+        }
+        return Utf32{data: data};
+    }
+
+    /// Converts a stream of byte that _should_ be encoded in UTF-32 into the
+    /// `Utf32` type.
+    fn from_bytes(bytes: &[u8], big_endian: bool) -> Self {
+        return Utf16{data: endian_aware_byte_streamer::from_bytes::<u16>(bytes, big_endian)};
+    }
+
+    /// Converts an instance of the `Utf32` type into a vector of bytes that is
+    /// the UTF-32 encoded content.
+    fn to_bytes(&self, big_endian: bool) -> Vec<u8> {
+        return endian_aware_byte_streamer::to_bytes::<u16>(&self.data, big_endian);
+    }
+
 }
 
 /* ---------------------------- Helper functions ---------------------------- */

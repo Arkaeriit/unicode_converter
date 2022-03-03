@@ -11,6 +11,7 @@ pub mod unicode_encoding;
 /// strings into the other unicode encoding types.
 pub mod utf_8;
 
+/// The UTF-16 module manipulates UTF-16 data.
 pub mod utf_16;
 
 /// This module is used to convert from stream of bytes to streams of numbers

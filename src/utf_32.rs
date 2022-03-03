@@ -40,8 +40,8 @@ impl UnicodeEncoding for Utf32 {
 
     /// Converts a stream of byte that _should_ be encoded in UTF-32 into the
     /// `Utf32` type.
-    fn from_bytes(bytes: &[u8], big_endian: bool) -> Utf32 {
-        return Utf32{data: endian_aware_byte_streamer::from_bytes(bytes, big_endian)};
+    fn from_bytes(bytes: &[u8], big_endian: bool) -> Self {
+        return Utf32{data: endian_aware_byte_streamer::from_bytes::<u32>(bytes, big_endian)};
     }
 
     /// Converts an instance of the `Utf32` type into a vector of bytes that is

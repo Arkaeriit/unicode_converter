@@ -11,6 +11,7 @@ fn main() {
 #[cfg(test)]
 mod test {
     use unicode_converter::utf_32::Utf32;
+    use unicode_converter::utf_16::Utf16;
     use unicode_converter::utf_8::Utf8;
     use unicode_converter::unicode_encoding::UnicodeEncoding;
 
@@ -35,6 +36,9 @@ mod test {
         let utf8 = Utf8::from_string(reference);
         let conv_2 = utf8.to_string();
         assert_eq!(reference, conv_2);
+        let utf16 = Utf16::from_string(reference);
+        let conv_3 = utf16.to_string();
+        assert_eq!(reference, conv_3);
     }
 
     #[test]
