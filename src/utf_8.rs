@@ -15,10 +15,13 @@ pub struct Utf8 {
 
 impl Utf8 {
     /// Converts a Rust String into `Utf8` struct.
-    pub fn from_string(s: &str) -> Self {
+    pub fn from_string(s: &str) -> Result<Self, UnicodeEncodingError> {
         let mut utf = Utf8{data: s.to_string().as_bytes().to_vec()};
         pad_with_0(&mut utf.data);
-        return utf;
+        match utf.check_sanity() {
+            NoError => return Ok(utf),
+            x => return Err(x),
+        }
     }
 
     /// Converts a `Utf8` struct to a Rust string
@@ -61,7 +64,7 @@ impl UnicodeEncoding for Utf8 {
     fn to_bytes(&self, _big_endian: bool) -> Vec<u8> {
         let mut ret = self.data.clone();
         if ret.len() < 3 {
-            panic!("Ho no, badly made type...");
+            panic!("[UNICODE CONVERTER INTERNAL ERROR] An Utf8 instance in not properly formed. It is missing 3 padding bytes. This should not happen as the Utf8 instance should all be padded with 0.");
         }
         remove_pad_with_0(&mut ret);
         return ret;
@@ -110,7 +113,7 @@ fn number_non_nul_bits(n: u32) -> usize {
             return i;
         }
     }
-    panic!("Error in number_non_nul_bits. This should not have happen.");
+    panic!("[IMPOSSIBLE ERROR] There is not enough bits in n for this to happen.");
 }
 
 /// Convert an UTF-32 glyph into the equivalents UTF-8 bytes.
@@ -173,9 +176,9 @@ fn pad_with_0(data: &mut Vec<u8>) {
 fn remove_pad_with_0(v: &mut Vec<u8>) {
     for _ in 0..3 {
         match v.pop() {
-            None => {panic!("Ho no, unexpected bug in the lib.");}
+            None => {panic!("[UNICODE CONVERTER INTERNAL ERROR] An Utf8 instance in not properly formed. It is missing 3 padding bytes. This should not happen as the Utf8 instance should all be padded with 0.");}
             Some(0) => {}
-            Some(_) => {panic!("Ho no, badly made type...");}
+            Some(_) => {panic!("[UNICODE CONVERTER INTERNAL ERROR] An Utf8 instance does not ends with 3 padding bytes. This should not have happened.");}
         }
     }
 }
@@ -203,7 +206,7 @@ fn test_utf_32_to_utf_8_and_back() {
 /// Test that the conversion from string to UTF-8 and back works.
 fn str_to_utf_8_and_back() {
     let s = "Laé§çà→̉ỏ";
-    let conv = Utf8::from_string(s);
+    let conv = Utf8::from_string(s).unwrap();
     let conv_back = conv.to_string();
     assert_eq!(s, conv_back);
 }

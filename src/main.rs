@@ -27,25 +27,41 @@ mod test {
         assert_eq!(converted_bytes, random_bytes);
     }
 
-    #[test]
-    fn string_conv() {
-        let reference = "Abcde";
-        let utf32 = Utf32::from_string(reference);
+    /// Tests all types conversion.
+    fn string_conv(reference: &str) {
+        let utf32 = Utf32::from_string(reference).unwrap();
         let conv_1 = utf32.to_string();
         assert_eq!(reference, conv_1);
-        let utf8 = Utf8::from_string(reference);
+        let utf8 = Utf8::from_string(reference).unwrap();
         let conv_2 = utf8.to_string();
         assert_eq!(reference, conv_2);
-        let utf16 = Utf16::from_string(reference);
+        let utf16 = Utf16::from_string(reference).unwrap();
         let conv_3 = utf16.to_string();
         assert_eq!(reference, conv_3);
+    }
+
+    #[test]
+    fn testing_string_conv() {
+        string_conv("Avcde");
+        string_conv("aeé¤ㅢㅟ😎🐤");
+    }
+
+    #[test]
+    fn test_null() {
+        let bytes: [u8; 2] = ['a' as u8, 0];
+        let utf8 = match Utf8::from_bytes(&bytes, false) {
+            Ok(x) => x,
+            Err(_) => {panic!("Error in utf8 from bytes.\n");}
+        };
+        let s = utf8.to_string();
+        assert_eq!(s, "a\0");
     }
 
     #[test]
     fn fancy_codepoints() {
         let utf8_str = "aeé¤ㅢㅟ😎🐤";
         let unicode_codepoints = Utf32{data: vec!['a' as u32, 'e' as u32, 0x00E9, 0x00A4, 0x3162, 0x315F, 0x1F60E, 0x1F424]};
-        let conv = Utf32::from_string(utf8_str);
+        let conv = Utf32::from_string(utf8_str).unwrap();
         assert!(conv == unicode_codepoints);
     }
 

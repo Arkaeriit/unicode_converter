@@ -38,9 +38,9 @@ pub trait UnicodeEncoding {
     }
 
     /// Takes a Rust string and converts it into Unicode encoded content.
-    fn from_string(s: &str) -> Self where Self: Sized {
-        let utf8 = Utf8::from_string(s);
-        return utf8.convert_to::<Self>();
+    fn from_string(s: &str) -> Result<Self, UnicodeEncodingError> where Self: Sized {
+        let utf8 = Utf8::from_string(s)?;
+        return Ok(utf8.convert_to::<Self>());
     }
 
     /// Converts from one Unicode encoding to an other.
