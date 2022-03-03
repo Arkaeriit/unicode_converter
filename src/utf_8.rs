@@ -13,14 +13,14 @@ pub struct Utf8 {
 
 impl Utf8 {
     /// Converts a Rust String into `Utf8` struct.
-    fn from_string(s: &str) -> Self {
+    pub fn from_string(s: &str) -> Self {
         let mut utf = Utf8{data: s.to_string().as_bytes().to_vec()};
         pad_with_0(&mut utf.data);
         return utf;
     }
 
     /// Converts a `Utf8` struct to a Rust string
-    fn to_string(&self) -> String {
+    pub fn to_string(&self) -> String {
         let mut bytes = self.data.clone();
         remove_pad_with_0(&mut bytes);
         let ret = std::str::from_utf8(&bytes).unwrap().to_string();

@@ -2,6 +2,7 @@
 /// contains the common capabilities for all Unicode encodings.
 
 use crate::utf_32::Utf32;
+use crate::utf_8::Utf8;
 
 /// The `UnicodeEncoding` trait contains the basic function shared with all
 /// the other encodings in this crate. This is converting the data from and to
@@ -29,6 +30,20 @@ pub trait UnicodeEncoding {
     fn to_bytes(&self, big_endian: bool) -> Vec<u8>;
 
     // Functions implemented in this trait
+    /// Converts an Unicode encoded content and converts it to Rust's string.
+    fn to_string(&self) -> String {
+        let utf32 = self.to_utf_32();
+        let utf8 = Utf8::from_utf_32(&utf32);
+        return utf8.to_string();
+    }
+
+    /// Takes a Rust string and converts it into Unicode encoded content.
+    fn from_string(s: &str) -> Self where Self: Sized {
+        let utf8 = Utf8::from_string(s);
+        let utf32 = utf8.to_utf_32();
+        return Self::from_utf_32(&utf32);
+    }
+
     /// Tell if the encoded content is equal to an other encoded content,
     /// regardless of the chosen encoding.
     fn content_eq<T: UnicodeEncoding>(&self, other: &T) -> bool {
