@@ -11,6 +11,8 @@ pub mod unicode_encoding;
 /// strings into the other unicode encoding types.
 pub mod utf_8;
 
+pub mod utf_16;
+
 /// This module is used to convert from stream of bytes to streams of numbers
 /// knowing and taking care about the endianness. It works with any number type
 /// that can be bit-cased to u64. It is quite dirty and rely a bit on unsafe
