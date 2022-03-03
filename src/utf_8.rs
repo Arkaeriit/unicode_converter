@@ -135,7 +135,7 @@ fn utf_32_glyph_to_utf_8(glyph: u32) -> Vec<u8> {
         ret.push(CNT_BYTE_GLYPH_CODE   | ((glyph >>  6) as u8) & !CNT_BYTE_GLYPH_MASK);
         ret.push(CNT_BYTE_GLYPH_CODE   | ((glyph >>  0) as u8) & !CNT_BYTE_GLYPH_MASK);
     } else {
-        panic!("Invalid UTF-32 glyph.");
+        panic!("[UNICODE ENCODING ERROR] Invalid UTF-32 glyph. This should not have happen if the source was safely generated with from_string or from_bytes. This could happen if from_string_no_check was used. This need to be corrected from the library's user side.");
     }
     return ret;
 }

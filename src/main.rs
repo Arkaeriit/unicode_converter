@@ -20,7 +20,11 @@ mod test {
     fn basic_utf_32_test() {
         let mut random_bytes: Vec<u8> = Vec::new();
         for i in 0..128 {
-            random_bytes.push(i);
+            if i % 4 < 2 { // Check to ensure that the _unicode codepoints_ are somewhat valid
+                random_bytes.push(i);
+            } else {
+                random_bytes.push(0);
+            }
         }
         let utf32_glyphs = Utf32::from_bytes(random_bytes.as_slice(), false).unwrap();
         let converted_bytes =utf32_glyphs.to_bytes(false);

@@ -32,7 +32,15 @@ impl Utf32 {
     /// absurd. This should not be used except when implementing the generic
     /// check_sanity for all Unicode encoding.
     pub fn check_sanity_utf32(&self) -> UnicodeEncodingError {
-        //TODO
+        // Ensure that there is not too much bits in the code-point.
+        const VALID_CODEPOINT: u32 = 0b00011111_11111111_11111111;
+        for i in 0..self.data.len() {
+            let glyph = self.data[i];
+            if glyph & !VALID_CODEPOINT != 0 {
+                return InvalidCodepointTooManyBits;
+            }
+
+        }
         return NoError;
     }
 }
@@ -67,7 +75,7 @@ impl UnicodeEncoding for Utf32 {
 #[test]
 fn test_data_content() {
     let data: [u8; 4] = [0, 1, 2, 3];
-    let utf_32_glyph = Utf32::from_bytes(data.as_slice(), false).unwrap();
-    assert_eq!(utf_32_glyph.data[0], 0x03020100);
+    let utf_32_glyph = Utf32::from_bytes(data.as_slice(), true).unwrap();
+    assert_eq!(utf_32_glyph.data[0], 0x00010203);
 }
 

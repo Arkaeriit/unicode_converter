@@ -80,5 +80,6 @@ pub trait UnicodeEncoding {
 #[derive(Debug)]
 pub enum UnicodeEncodingError {
     NoError,
+    InvalidCodepointTooManyBits,
 }
 
