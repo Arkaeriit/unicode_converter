@@ -1,5 +1,7 @@
 /// The UTF-16 module manipulates UTF-16 data.
 
+use crate::unicode_encoding::UnicodeEncodingError::*;
+use crate::unicode_encoding::UnicodeEncodingError;
 use crate::unicode_encoding::UnicodeEncoding;
 use crate::endian_aware_byte_streamer;
 use crate::utf_32::Utf32;
@@ -36,8 +38,9 @@ impl UnicodeEncoding for Utf16 {
 
     /// Converts a stream of byte that _should_ be encoded in UTF-32 into the
     /// `Utf32` type.
-    fn from_bytes(bytes: &[u8], big_endian: bool) -> Self {
-        return Utf16{data: endian_aware_byte_streamer::from_bytes::<u16>(bytes, big_endian)};
+    fn from_bytes_no_check(bytes: &[u8], big_endian: bool) -> Result<Self, UnicodeEncodingError> {
+        let ret = Utf16{data: endian_aware_byte_streamer::from_bytes::<u16>(bytes, big_endian)};
+        return Ok(ret);
     }
 
     /// Converts an instance of the `Utf32` type into a vector of bytes that is

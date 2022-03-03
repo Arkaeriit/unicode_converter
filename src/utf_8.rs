@@ -1,6 +1,8 @@
 /// The UTF-8 module is quite important as it can be used to convert Rust's
 /// strings into the other unicode encoding types.
 
+use crate::unicode_encoding::UnicodeEncodingError::*;
+use crate::unicode_encoding::UnicodeEncodingError;
 use crate::unicode_encoding::UnicodeEncoding;
 use crate::utf_32::Utf32;
 
@@ -67,10 +69,10 @@ impl UnicodeEncoding for Utf8 {
 
     /// Consider a stream of UTF-8 encoded byte and turn it into a `Utf8` type.
     /// It only copies the bytes and then, add the 3 null bytes for padding.
-    fn from_bytes(bytes: &[u8], _big_endian: bool) -> Self {
+    fn from_bytes_no_check(bytes: &[u8], _big_endian: bool) -> Result<Self, UnicodeEncodingError> {
         let mut ret = Utf8{data: bytes.to_vec()};
         pad_with_0(&mut ret.data);
-        return ret;
+        return Ok(ret);
     }
 
 }

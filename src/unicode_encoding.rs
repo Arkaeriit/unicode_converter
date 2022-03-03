@@ -19,14 +19,15 @@ pub trait UnicodeEncoding {
     /// UTF-32. It should always be implemented by the encoding's type.
     fn to_utf_32(&self) -> Utf32;
 
-    /// The function `from_bytes` takes a stream of bytes and interpret it as
-    /// it was in the desired encoding. It should always be implemented by the
-    /// encoding's type.
-    fn from_bytes(bytes: &[u8], big_endian: bool) -> Self;
+    /// The function `from_bytes_no_check` takes a stream of bytes and
+    /// interpret it as it was in the desired encoding. It should always be
+    /// implemented by the encoding's type. This does not uses the check_sanity
+    /// function.
+    fn from_bytes_no_check(bytes: &[u8], big_endian: bool) -> Result<Self, UnicodeEncodingError> where Self: Sized;
 
-    /// The function `to_bytes` takes the raw-data of encoded content and
-    /// convert it to a vector of bytes. It should always be implemented by the
-    /// encoding's type.
+    /// The function `to_bytes` takes the raw-data of encoded content
+    /// and convert it to a vector of bytes. It should always be implemented by
+    /// the encoding's type.
     fn to_bytes(&self, big_endian: bool) -> Vec<u8>;
 
     // Functions implemented in this trait
@@ -54,7 +55,30 @@ pub trait UnicodeEncoding {
     fn content_eq<T: UnicodeEncoding>(&self, other: &T) -> bool {
         return self.to_utf_32() == other.to_utf_32();
     }
+
+    /// Checks that the unicode data is valid.
+    fn check_sanity(&self) -> UnicodeEncodingError {
+        let utf32 = self.to_utf_32();
+        return utf32.check_sanity_utf32();
+    }
+
+    /// The function `from_bytes` takes a stream of bytes and interpret it as
+    /// it was in the desired encoding. It should always be implemented by the
+    /// encoding's type.
+    fn from_bytes(bytes: &[u8], big_endian: bool) -> Result<Self, UnicodeEncodingError> where Self: Sized {
+        let ret: Self = Self::from_bytes_no_check(bytes, big_endian)?;
+        match ret.check_sanity() {
+            UnicodeEncodingError::NoError => Ok(ret),
+            x => Err(x),
+        }
+    }
+
     //fn from_file(filename: &str) -> Self;
     //fn to_file(data: &Self, filename: &str);
+}
+
+#[derive(Debug)]
+pub enum UnicodeEncodingError {
+    NoError,
 }
 

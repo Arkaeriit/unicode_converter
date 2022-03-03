@@ -2,6 +2,8 @@
 /// only convert from and to UTF-32. Thus, this module only need to take care
 /// of writing and reading encoded values to and from a string of byte.
 
+use crate::unicode_encoding::UnicodeEncodingError::*;
+use crate::unicode_encoding::UnicodeEncodingError;
 use crate::unicode_encoding::UnicodeEncoding;
 use crate::endian_aware_byte_streamer;
 
@@ -25,6 +27,16 @@ impl Clone for Utf32 {
     }
 }
 
+impl Utf32 {
+    /// Check that all the Unicode code-points are valid or at least not too
+    /// absurd. This should not be used except when implementing the generic
+    /// check_sanity for all Unicode encoding.
+    pub fn check_sanity_utf32(&self) -> UnicodeEncodingError {
+        //TODO
+        return NoError;
+    }
+}
+
 impl UnicodeEncoding for Utf32 {
     /// A quite dummy function to comply with the need of the UnicodeEncoding
     /// trait.
@@ -40,8 +52,9 @@ impl UnicodeEncoding for Utf32 {
 
     /// Converts a stream of byte that _should_ be encoded in UTF-32 into the
     /// `Utf32` type.
-    fn from_bytes(bytes: &[u8], big_endian: bool) -> Self {
-        return Utf32{data: endian_aware_byte_streamer::from_bytes::<u32>(bytes, big_endian)};
+    fn from_bytes_no_check(bytes: &[u8], big_endian: bool) -> Result<Self, UnicodeEncodingError> {
+        let ret = Utf32{data: endian_aware_byte_streamer::from_bytes::<u32>(bytes, big_endian)};
+        return Ok(ret);
     }
 
     /// Converts an instance of the `Utf32` type into a vector of bytes that is
@@ -54,7 +67,7 @@ impl UnicodeEncoding for Utf32 {
 #[test]
 fn test_data_content() {
     let data: [u8; 4] = [0, 1, 2, 3];
-    let utf_32_glyph = Utf32::from_bytes(data.as_slice(), false);
+    let utf_32_glyph = Utf32::from_bytes(data.as_slice(), false).unwrap();
     assert_eq!(utf_32_glyph.data[0], 0x03020100);
 }
 
