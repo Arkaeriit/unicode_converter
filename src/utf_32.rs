@@ -3,6 +3,7 @@
 /// of writing and reading encoded values to and from a string of byte.
 
 use crate::unicode_encoding::UnicodeEncoding;
+use crate::endian_aware_byte_streamer;
 
 /// A very basic wrapper for UTF-32 encoded data.
 pub struct Utf32 {
@@ -40,53 +41,14 @@ impl UnicodeEncoding for Utf32 {
     /// Converts a stream of byte that _should_ be encoded in UTF-32 into the
     /// `Utf32` type.
     fn from_bytes(bytes: &[u8], big_endian: bool) -> Utf32 {
-        if bytes.len() % 4 != 0 {
-            panic!("Ho no!");
-        }
-        let mut data: Vec<u32> = Vec::new();
-        let mut endian_index: [usize; 4] = [0, 1, 2, 3];
-        if big_endian {
-           endian_index = [3, 2, 1, 0];
-        }
-        for i in 0..bytes.len()/4 {
-            let mut new_glyph: u32 = 0;
-            new_glyph |= (bytes[i*4 + endian_index[0]] as u32) << 0;
-            new_glyph |= (bytes[i*4 + endian_index[1]] as u32) << 8;
-            new_glyph |= (bytes[i*4 + endian_index[2]] as u32) << 16;
-            new_glyph |= (bytes[i*4 + endian_index[3]] as u32) << 24;
-            data.push(new_glyph);
-        }
-        return Utf32{data: data};
+        return Utf32{data: endian_aware_byte_streamer::from_bytes(bytes, big_endian)};
     }
 
     /// Converts an instance of the `Utf32` type into a vector of bytes that is
     /// the UTF-32 encoded content.
     fn to_bytes(&self, big_endian: bool) -> Vec<u8> {
-        let mut ret: Vec<u8> = Vec::new();
-        let mut endian_index: [usize; 4] = [0, 1, 2, 3];
-        if big_endian {
-           endian_index = [3, 2, 1, 0];
-        }
-        for glyph in &self.data {
-            let litle_endianed_glyph = cut_u32(*glyph);
-            for index in endian_index {
-                ret.push(litle_endianed_glyph[index]);
-            }
-        }
-        return ret;
+        return endian_aware_byte_streamer::to_bytes::<u32>(&self.data, big_endian);
     }
-}
-
-/// Cut a 32 bit number into a 4 byte array by considering that the number
-/// is little endian.
-fn cut_u32(n: u32) -> [u8; 4] {
-    let ret = [
-        (n >>  0 & 0xFF) as u8,
-        (n >>  8 & 0xFF) as u8,
-        (n >> 16 & 0xFF) as u8,
-        (n >> 24 & 0xFF) as u8,
-    ];
-    return ret;
 }
 
 #[test]
