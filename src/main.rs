@@ -16,7 +16,7 @@ mod test {
 
 
     #[test]
-    fn test_basic_utf_32_test() {
+    fn basic_utf_32_test() {
         let mut random_bytes: Vec<u8> = Vec::new();
         for i in 0..128 {
             random_bytes.push(i);
@@ -35,6 +35,14 @@ mod test {
         let utf8 = Utf8::from_string(reference);
         let conv_2 = utf8.to_string();
         assert_eq!(reference, conv_2);
+    }
+
+    #[test]
+    fn fancy_codepoints() {
+        let utf8_str = "aeé¤ㅢㅟ😎🐤";
+        let unicode_codepoints = Utf32{data: vec!['a' as u32, 'e' as u32, 0x00E9, 0x00A4, 0x3162, 0x315F, 0x1F60E, 0x1F424]};
+        let conv = Utf32::from_string(utf8_str);
+        assert!(conv == unicode_codepoints);
     }
 
 }
