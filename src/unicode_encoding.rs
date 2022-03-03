@@ -32,16 +32,21 @@ pub trait UnicodeEncoding {
     // Functions implemented in this trait
     /// Converts an Unicode encoded content and converts it to Rust's string.
     fn to_string(&self) -> String {
-        let utf32 = self.to_utf_32();
-        let utf8 = Utf8::from_utf_32(&utf32);
+        let utf8 = self.convert_to::<Utf8>();
         return utf8.to_string();
     }
 
     /// Takes a Rust string and converts it into Unicode encoded content.
     fn from_string(s: &str) -> Self where Self: Sized {
         let utf8 = Utf8::from_string(s);
-        let utf32 = utf8.to_utf_32();
-        return Self::from_utf_32(&utf32);
+        return utf8.convert_to::<Self>();
+    }
+
+    /// Converts from one Unicode encoding to an other.
+    fn convert_to<T: UnicodeEncoding> (&self) -> T {
+        let utf32 = self.to_utf_32();
+        let ret: T = T::from_utf_32(&utf32);
+        return ret;
     }
 
     /// Tell if the encoded content is equal to an other encoded content,

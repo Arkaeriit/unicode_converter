@@ -1,3 +1,5 @@
+/// The UTF-16 module manipulates UTF-16 data.
+
 use crate::unicode_encoding::UnicodeEncoding;
 use crate::endian_aware_byte_streamer;
 use crate::utf_32::Utf32;
