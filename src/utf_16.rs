@@ -12,13 +12,22 @@ pub struct Utf16 {
     data: Vec<u16>
 }
 
+/// Push the content of vec2 into vec1
+fn transvase(vec1: &mut Vec<u16>, vec2: &Vec<u16>) {
+    for u in vec2 {
+        vec1.push(*u);
+    }
+}
+
 impl UnicodeEncoding for Utf16 {
     /// Convert UTF-32 data to UTF-16.
     fn from_utf_32(data_utf_32: &Utf32) -> Self {
         let mut data: Vec<u16> = Vec::new();
         for glyph in &data_utf_32.data {
-            for new_glyph in utf_32_glyph_to_utf_16(*glyph) {
-                data.push(new_glyph);
+            match utf_32_glyph_to_utf_16(*glyph) {
+                Ok(new_glyph) => {transvase(&mut data, &new_glyph);},
+                Err(UnpairedSurrogateNotification) => {data.push(*glyph as u16)}, // If the Unicode data have been sanitized, we are right to assume that there is no possible ambiguity with unpaired surrogates.
+                Err(_) => {panic!("[UNICODE ENCODING ERROR] Invalid UTF-16 glyph. This should not have happen if the source was safely generated with from_string or from_bytes. This could happen if from_string_no_check was used. This need to be corrected from the library's user side.");},
             }
         }
         return Utf16{data: data};
@@ -66,7 +75,7 @@ const   LOW_SURROGATE: u16 = 0xDC00;
 const  SURROGATE_MASK: u16 = 0b11111100_00000000;
 
 /// Turns an UTF-32 glyph into a one or two 16 bit numbers as an UTF-16 value.
-fn utf_32_glyph_to_utf_16(glyph: u32) -> Vec<u16>  {
+fn utf_32_glyph_to_utf_16(glyph: u32) -> Result<Vec<u16>, UnicodeEncodingError>  {
     let mut ret: Vec<u16> = Vec::new();
     if     (glyph >= BASIC_PLANE_1_START && glyph <= BASIC_PLANE_1_END)
         || (glyph >= BASIC_PLANE_2_START && glyph <= BASIC_PLANE_2_END) {
@@ -76,11 +85,28 @@ fn utf_32_glyph_to_utf_16(glyph: u32) -> Vec<u16>  {
         ret.push(high_surrogate);
         ret.push(low_surrogate);
     } else if glyph > BASIC_PLANE_1_END && glyph < BASIC_PLANE_2_START {
-        panic!("TODO: fancy stuff with unpaired surrogate.");
+        return Err(UnpairedSurrogateNotification);
     } else {
-        panic!("Nothing to do here.");
+        return Err(InvalidCodepointTooManyBits);
     }
-    return ret;
+    return Ok(ret);
+}
+
+/// Tells if two Unicode code-points can be next two another or if there could
+/// be an ambiguity when two unpaired surrogate are next two another. If the
+/// input text is proper Unicode, this should never happen.
+/// Doing so ensure that the text can be safely used as UTF-16.
+pub fn compatible_codepoints(glyph1: u32, glyph2: u32) -> UnicodeEncodingError {
+    match utf_32_glyph_to_utf_16(glyph1) {
+        Err(InvalidCodepointTooManyBits) => InvalidCodepointTooManyBits,
+        Err(UnpairedSurrogateNotification) => match utf_32_glyph_to_utf_16(glyph2) {
+            Err(UnpairedSurrogateNotification) => AmbiguousUnpairedSurrogates,
+            Err(x) => x,
+            Ok(_) => NoError,
+        },
+        Ok(_) => NoError,
+        Err(x) => x,
+    }
 }
 
 /// Turns an Unicode code-point from the supplementary plane into a high
@@ -127,7 +153,7 @@ fn utf_16_glyph_to_utf_32(utf16_data: &Vec<u16>, start: usize) -> (u32, usize) {
 /// Test that the conversion of glyphs between UTF-16 and UTF-32 works.
 fn test_utf_16_to_utf_32_and_back() {
     fn double_conv(glyph: u32) {
-        let conv = utf_32_glyph_to_utf_16(glyph);
+        let conv = utf_32_glyph_to_utf_16(glyph).unwrap();
         let (conv_back, len) = utf_16_glyph_to_utf_32(&conv, 0);
         println!("len of glyph {}: {}", conv_back, len);
         assert_eq!(glyph, conv_back);
@@ -145,7 +171,7 @@ fn test_utf_16_to_utf_32_and_back() {
 /// Test that unpaired surrogates panic in basic conversion.
 fn test_invalid_utf16_glyphs_1() {
     let glyph = BASIC_PLANE_1_END + 10;
-    utf_32_glyph_to_utf_16(glyph);
+    utf_32_glyph_to_utf_16(glyph).unwrap();
 }
 
 #[test]
@@ -153,6 +179,6 @@ fn test_invalid_utf16_glyphs_1() {
 /// Test that very big code-points panic.
 fn test_invalid_utf16_glyphs_2() {
     let glyph = SUPPLEMENTARY_PLANE_END + 10;
-    utf_32_glyph_to_utf_16(glyph);
+    utf_32_glyph_to_utf_16(glyph).unwrap();
 }
 

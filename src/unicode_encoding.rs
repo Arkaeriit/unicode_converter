@@ -99,5 +99,12 @@ pub enum UnicodeEncodingError {
     /// input bytes. For example, an input that should have been UTF-32 does
     /// not contain a number of bytes that is a multiple of 4.
     InvalidStreamSize,
+
+    /// Two code-points that would be unpaired surrogates as UTF-16 are next to
+    /// each others, thus this would be ambiguous ti use as UTF-16.
+    AmbiguousUnpairedSurrogates,
+
+    /// Used internally to managed unpaired surrogate.
+    UnpairedSurrogateNotification,
 }
 

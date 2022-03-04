@@ -6,6 +6,7 @@ use crate::unicode_encoding::UnicodeEncodingError::*;
 use crate::unicode_encoding::UnicodeEncodingError;
 use crate::unicode_encoding::UnicodeEncoding;
 use crate::endian_aware_byte_streamer;
+use crate::utf_16;
 
 /// A very basic wrapper for UTF-32 encoded data.
 pub struct Utf32 {
@@ -32,14 +33,23 @@ impl Utf32 {
     /// absurd. This should not be used except when implementing the generic
     /// check_sanity for all Unicode encoding.
     pub fn check_sanity_utf32(&self) -> UnicodeEncodingError {
-        // Ensure that there is not too much bits in the code-point.
         const VALID_CODEPOINT: u32 = 0b00011111_11111111_11111111;
         for i in 0..self.data.len() {
             let glyph = self.data[i];
+            // Ensure that there is not too much bits in the code-point.
             if glyph & !VALID_CODEPOINT != 0 {
                 return InvalidCodepointTooManyBits;
             }
-
+            // Ensure that there is no ambiguous unpaired surrogates.
+            let other_glyph = if i + 1 == self.data.len() {
+                0
+            } else {
+                self.data[i+1]
+            };
+            match utf_16::compatible_codepoints(glyph, other_glyph) {
+                NoError => {},
+                x => return x,
+            }
         }
         return NoError;
     }
