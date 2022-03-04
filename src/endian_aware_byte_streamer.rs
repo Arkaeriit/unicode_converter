@@ -3,6 +3,8 @@
 /// that can be bit-cased to u64. It is quite dirty and rely a bit on unsafe
 /// code.
 
+use crate::unicode_encoding::UnicodeEncodingError::*;
+use crate::unicode_encoding::UnicodeEncodingError;
 use std::mem::size_of;
 
 /* ---------------------------- Helper functions ---------------------------- */
@@ -76,10 +78,10 @@ pub fn to_bytes<T: Copy + TryFrom<u64>>(data: &Vec<T>, big_endian: bool) -> Vec<
 }
 
 /// Convert a slice of bytes into a vector of numbers.
-pub fn from_bytes<T: Copy + TryFrom<u64> + std::fmt::Debug>(bytes: &[u8], big_endian: bool) -> Vec<T> where <T as TryFrom<u64>>::Error: std::fmt::Debug {
+pub fn from_bytes<T: Copy + TryFrom<u64> + std::fmt::Debug>(bytes: &[u8], big_endian: bool) -> Result<Vec<T>, UnicodeEncodingError> where <T as TryFrom<u64>>::Error: std::fmt::Debug {
     let len_t = size_of::<T>();
     if bytes.len() % len_t != 0 {
-        panic!("Ho no!");
+        return Err(InvalidStreamSize);
     }
     let mut ret: Vec<T> = Vec::new();
     let endian_index = gen_endian_indexes::<T>(big_endian);
@@ -91,7 +93,7 @@ pub fn from_bytes<T: Copy + TryFrom<u64> + std::fmt::Debug>(bytes: &[u8], big_en
         let new_push: T = std::convert::TryFrom::<u64>::try_from(new_number).expect("A type bigger than u64 have been used for unsafe type conversion. This is very bad.");
         ret.push(new_push);
     }
-    return ret;
+    return Ok(ret);
 }
 
 /* ---------------------------------- Test ---------------------------------- */
@@ -118,8 +120,8 @@ fn test_to_bytes() {
 #[test]
 fn test_from_bytes() {
     let bytes: Vec<u8> = vec![0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF];
-    let conv_le = from_bytes::<u32>(&bytes, false);
-    let conv_be = from_bytes::<u32>(&bytes, true);
+    let conv_le = from_bytes::<u32>(&bytes, false).unwrap();
+    let conv_be = from_bytes::<u32>(&bytes, true).unwrap();
     assert_eq!(conv_le, vec![0x67452301, 0xEFCDAB89]); 
     assert_eq!(conv_be, vec![0x0123_4567, 0x89AB_CDEF]); 
 }

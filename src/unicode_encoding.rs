@@ -94,5 +94,10 @@ pub enum UnicodeEncodingError {
     /// Indicate that the number of bytes in a glyph is not coherent with the
     /// prefix used in the first byte if the glyph.
     IncoherentUtf8Codepoint,
+
+    /// Indicate that there is not the right numbers of bytes in a stream of
+    /// input bytes. For example, an input that should have been UTF-32 does
+    /// not contain a number of bytes that is a multiple of 4.
+    InvalidStreamSize,
 }
 

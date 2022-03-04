@@ -61,7 +61,7 @@ impl UnicodeEncoding for Utf32 {
     /// Converts a stream of byte that _should_ be encoded in UTF-32 into the
     /// `Utf32` type.
     fn from_bytes_no_check(bytes: &[u8], big_endian: bool) -> Result<Self, UnicodeEncodingError> {
-        let ret = Utf32{data: endian_aware_byte_streamer::from_bytes::<u32>(bytes, big_endian)};
+        let ret = Utf32{data: endian_aware_byte_streamer::from_bytes::<u32>(bytes, big_endian)?};
         return Ok(ret);
     }
 
