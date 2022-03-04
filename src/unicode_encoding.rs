@@ -79,7 +79,20 @@ pub trait UnicodeEncoding {
 
 #[derive(Debug)]
 pub enum UnicodeEncodingError {
+    /// Indicate an absence of error from a function checking for errors.
     NoError,
+
+    /// Indicate that bits above the 21th bit in a code-point are not empty.
+    /// This means that the code-point is invalid.
     InvalidCodepointTooManyBits,
+
+    /// Indicate that a byte in an UTF-8 stream of bytes does not start with
+    /// a valid prefix. This might means that the data are not encoded in
+    /// UTF-8...
+    InvalidUtf8Prefix,
+
+    /// Indicate that the number of bytes in a glyph is not coherent with the
+    /// prefix used in the first byte if the glyph.
+    IncoherentUtf8Codepoint,
 }
 

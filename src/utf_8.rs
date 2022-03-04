@@ -28,9 +28,24 @@ impl Utf8 {
     pub fn to_string(&self) -> String {
         let mut bytes = self.data.clone();
         remove_pad_with_0(&mut bytes);
-        let ret = std::str::from_utf8(&bytes).unwrap().to_string();
+        let ret = std::str::from_utf8(&bytes).unwrap().to_string(); // As we are manipulating sanitized UTF-8 data it _should_ be OK to use unwrap here.
         return ret;
     }
+
+    /// Goes through a whole UTF-8 data to ensure that it is valid.
+    fn check_sanity_utf8(&self) -> UnicodeEncodingError {
+        let mut index: usize = 0;
+        while self.data[index] != 0 {
+            let (_glyph, len) = match utf_8_glyph_to_utf_32(&self.data, index) {
+                Err(x) => {return x;},
+                Ok(x) => x,
+            };
+            index += len;
+        }
+        return NoError;
+    }
+
+
 }
 
 impl UnicodeEncoding for Utf8 {
@@ -52,7 +67,10 @@ impl UnicodeEncoding for Utf8 {
         let mut index: usize = 0;
         let mut data: Vec<u32> = Vec::new();
         while self.data[index] != 0 {
-            let (glyph, len) = utf_8_glyph_to_utf_32(&self.data, index);
+            let (glyph, len) = match utf_8_glyph_to_utf_32(&self.data, index) {
+                Err(_) => {panic!("[UNICODE ENCODING ERROR] Invalid UTF-8 glyph. This should not have happen if the source was safely generated with from_string or from_bytes. This could happen if from_string_no_check was used. This need to be corrected from the library's user side.");},
+                Ok(x) => x,
+            };
             data.push(glyph);
             index += len;
         }
@@ -75,7 +93,10 @@ impl UnicodeEncoding for Utf8 {
     fn from_bytes_no_check(bytes: &[u8], _big_endian: bool) -> Result<Self, UnicodeEncodingError> {
         let mut ret = Utf8{data: bytes.to_vec()};
         pad_with_0(&mut ret.data);
-        return Ok(ret);
+        match ret.check_sanity_utf8() {
+            NoError => {return Ok(ret);},
+            x => {return Err(x)},
+        }
     }
 
 }
@@ -103,7 +124,6 @@ const GLYPH_CODE_ARR: [u8; 4] = [ONE_BYTE_GLYPH_CODE,
                                  TWO_BYTE_GLYPH_CODE,
                                  THREE_BYTE_GLYPH_CODE,
                                  FOUR_BYTE_GLYPH_CODE];
-
 
 /// Count the number of used bits in a number assuming all left-padding zeros
 /// are unused.
@@ -145,7 +165,8 @@ fn utf_32_glyph_to_utf_8(glyph: u32) -> Vec<u8> {
 /// The inputs are a stream of UTF-8 encoded data and the index of the
 /// beginning of the new glyph. The return value are the number of char used to
 /// encode the glyph.
-fn utf_8_glyph_to_utf_32(utf8_data: &Vec<u8>, start: usize) -> (u32, usize) {
+/// If the glyph does not makes sense, an error will be raised.
+fn utf_8_glyph_to_utf_32(utf8_data: &Vec<u8>, start: usize) -> Result<(u32, usize), UnicodeEncodingError> {
     let mut glyph_len = 0;
     let mut glyph: u32 = 0;
     for i in 0..4 {
@@ -156,13 +177,16 @@ fn utf_8_glyph_to_utf_32(utf8_data: &Vec<u8>, start: usize) -> (u32, usize) {
         }
     }
     if glyph_len == 0 {
-        panic!("Invalid prefix");
+        return Err(InvalidUtf8Prefix);
     }
     for i in 1..glyph_len {
+        if utf8_data[start+i] & CNT_BYTE_GLYPH_MASK != CNT_BYTE_GLYPH_CODE {
+            return Err(IncoherentUtf8Codepoint);
+        }
         glyph <<= 6;
         glyph |= (utf8_data[start+i] & !CNT_BYTE_GLYPH_MASK) as u32;
     }
-    return (glyph, glyph_len);
+    return Ok((glyph, glyph_len));
 }
 
 /// Adds 3 null bytes at the end of the UTF-8 encoded data.
@@ -191,7 +215,7 @@ fn test_utf_32_to_utf_8_and_back() {
 
     fn double_conv(glyph: u32) {
         let conv = utf_32_glyph_to_utf_8(glyph);
-        let (conv_back, len) = utf_8_glyph_to_utf_32(&conv, 0);
+        let (conv_back, len) = utf_8_glyph_to_utf_32(&conv, 0).unwrap();
         println!("len of glyph {}: {}", conv_back, len);
         assert_eq!(glyph, conv_back);
     }
