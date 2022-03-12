@@ -4,6 +4,8 @@
 use crate::utf_32::Utf32;
 use crate::utf_8::Utf8;
 
+use std::fs;
+
 /// The `UnicodeEncoding` trait contains the basic function shared with all
 /// the other encodings in this crate. This is converting the data from and to
 /// UTF-32 and writing it to or reading it from a file. Furthermore, it is also
@@ -73,8 +75,24 @@ pub trait UnicodeEncoding {
         }
     }
 
-    //fn from_file(filename: &str) -> Self;
-    //fn to_file(data: &Self, filename: &str);
+    /// Reads a file containing data encoded in an Unicode. If the file can't
+    /// be opened, an io error is returned. If the file can be open but the
+    /// data is not valid, an UnicodeEncodingError will be returned. If
+    /// everything goes well, the data is returned.
+    fn from_file(filename: &str, big_endian: bool) -> Result<Result<Self, UnicodeEncodingError>, std::io::Error> where Self: Sized {
+        let bytes = fs::read(filename)?;
+        return Ok(Self::from_bytes(&bytes, big_endian));
+    }
+
+    /// Writes Unicode data to a file. If that can be done, None is returned.
+    /// If there is an IO error, the IO error is returned in the `Some`.
+    fn to_file(data: &Self, filename: &str, big_endian: bool) -> Option<std::io::Error> {
+        let bytes = data.to_bytes(big_endian);
+        match fs::write(filename, &bytes) {
+            Ok(_) => None,
+            Err(x) => Some(x),
+        }
+    }
 }
 
 #[derive(Debug)]

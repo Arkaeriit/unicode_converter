@@ -12,3 +12,5 @@ name = "unicode_converter"
 path = "src/main.rs"
 
 [dependencies]
+clap = { version = "3.0.0", features = ["derive"] }
+
