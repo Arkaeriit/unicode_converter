@@ -1,7 +1,6 @@
 extern crate unicode_converter;
 use clap::Parser;
 
-use unicode_converter::unicode_encoding::UnicodeEncodingError::*;
 use unicode_converter::unicode_encoding::UnicodeEncodingError;
 use unicode_converter::unicode_encoding::UnicodeEncoding;
 use unicode_converter::utf_8::Utf8;
@@ -30,7 +29,7 @@ fn main() {
             std::process::exit(1);
         },
     };
-    let encoded_stream = match try_encode_data(&decoded_message, &arg.encoding_output, false) {
+    let encoded_stream = match try_to_encode_data(&decoded_message, &arg.encoding_output, false) {
         Some(x) => x,
         None => {
             eprintln!("Error, unknown output encoding.");
@@ -51,37 +50,24 @@ fn main() {
 /// as the from_file function but in an option block where Node is returned if
 /// the type is not known
 fn try_to_read_with_encoding(filename: &str, encoding: &str, big_engian: bool)  -> Option<Result<Result<Utf32, UnicodeEncodingError>, std::io::Error>> {
+    macro_rules! ttrwe_case {
+        ($type: ty) => {
+            {
+                let encoded = <$type>::from_file(filename, big_engian);
+                match encoded {
+                    Ok(x) => match x {
+                        Ok(y) => Some(Ok(Ok(y.to_utf_32()))),
+                        Err(y) => Some(Ok(Err(y))),
+                    }
+                    Err(x) => Some(Err(x)),
+                }
+            }
+        }
+    }
     match encoding {
-        "UTF-8" => {
-            let encoded = Utf8::from_file(filename, big_engian);
-            match encoded {
-                Ok(x) => match x {
-                    Ok(y) => Some(Ok(Ok(y.to_utf_32()))),
-                    Err(y) => Some(Ok(Err(y))),
-                }
-                Err(x) => Some(Err(x)),
-            }
-        },
-        "UTF-32" => {
-            let encoded = Utf32::from_file(filename, big_engian);
-            match encoded {
-                Ok(x) => match x {
-                    Ok(y) => Some(Ok(Ok(y.to_utf_32()))),
-                    Err(y) => Some(Ok(Err(y))),
-                }
-                Err(x) => Some(Err(x)),
-            }
-        },
-        "UTF-16" => {
-            let encoded = Utf16::from_file(filename, big_engian);
-            match encoded {
-                Ok(x) => match x {
-                    Ok(y) => Some(Ok(Ok(y.to_utf_32()))),
-                    Err(y) => Some(Ok(Err(y))),
-                }
-                Err(x) => Some(Err(x)),
-            }
-        },
+        "UTF-8" => ttrwe_case!(Utf8),
+        "UTF-16" => ttrwe_case!(Utf16),
+        "UTF-32" => ttrwe_case!(Utf32),
         _ => None,
     }
 }
@@ -89,23 +75,18 @@ fn try_to_read_with_encoding(filename: &str, encoding: &str, big_engian: bool)  
 /// Try to convert an UTF-32 in the encoding given as an argument string.
 /// If the encoding is not valid, None is returned. Then, the data is converted
 /// to a string of bytes.
-fn try_encode_data(utf32: &Utf32, encoding: &str, big_engian: bool) -> Option<Vec<u8>> {
-    let stream: Vec<u8> = match encoding {
-        "UTF-8" => {
-            let converted = Utf8::from_utf_32(utf32);
-            converted.to_bytes(big_engian)
-        },
-        "UTF-16" => {
-            let converted = Utf16::from_utf_32(utf32);
-            converted.to_bytes(big_engian)
-        },
-        "UTF-32" => {
-            let converted = Utf32::from_utf_32(utf32);
-            converted.to_bytes(big_engian)
-        },
-        _ => {return None;},
-    };
-    return Some(stream);
+fn try_to_encode_data(utf32: &Utf32, encoding: &str, big_engian: bool) -> Option<Vec<u8>> {
+    macro_rules! tted_case {
+        ($type: ty) => {
+            Some(<$type>::from_utf_32(utf32).to_bytes(big_engian))
+        }
+    }
+    match encoding {
+        "UTF-8" => tted_case!(Utf8),
+        "UTF-16" => tted_case!(Utf16),
+        "UTF-32" => tted_case!(Utf32),
+        _ => None,
+    }
 }
 
 /// A tool to convert Unicode encodings
