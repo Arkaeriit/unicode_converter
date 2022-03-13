@@ -7,6 +7,19 @@ use unicode_converter::utf_8::Utf8;
 use unicode_converter::utf_16::Utf16;
 use unicode_converter::utf_32::Utf32;
 
+/* ------------------------------- Exit codes ------------------------------- */
+
+// The encoding used is not supported.
+const ERR_UNKNOW_ENCODING: i32 = 1;
+
+// The input or output files cannot be manipulated.
+const ERR_IO: i32 = 2;
+
+// The encoding used is supported but the input data does not comply to it.
+const ERR_BAD_ENCODING: i32 = 3;
+
+/* ---------------------------------- main ---------------------------------- */
+
 fn main() {
     let arg = Args::parse();
     let input_file = match &arg.input_file as &str {
@@ -20,34 +33,36 @@ fn main() {
                 Err(z) => {
                     eprintln!("Error, invalid {} file.", arg.input_file);
                     eprintln!("The error is: {:?}", z);
-                    std::process::exit(3);
+                    std::process::exit(ERR_BAD_ENCODING);
                 },
             },
             Err(y) => {
                 eprintln!("Error, unable to read input file: {}.", y);
-                std::process::exit(2);
+                std::process::exit(ERR_IO);
             },
         },
         None => {
             eprintln!("Error, unknown input encoding.");
-            std::process::exit(1);
+            std::process::exit(ERR_UNKNOW_ENCODING);
         },
     };
     let encoded_stream = match try_to_encode_data(&decoded_message, &arg.encoding_output) {
         Some(x) => x,
         None => {
             eprintln!("Error, unknown output encoding.");
-            std::process::exit(1);
+            std::process::exit(ERR_UNKNOW_ENCODING);
         }
     };
     match std::fs::write(&arg.output_file, &encoded_stream) {
         Ok(_) => {},
         Err(x) => {
             eprintln!("Error, unable to write to output_file file: {}.", x);
-            std::process::exit(2);
+            std::process::exit(ERR_IO);
         }
     }
 }
+
+/* ---------------------------- Helper functions ---------------------------- */
 
 /// Try to read a file with the encoding given as a string. If it works,
 /// returns it converted to UTF-32. The results are encapsulated the same was
@@ -97,12 +112,10 @@ fn try_to_encode_data(utf32: &Utf32, encoding: &str) -> Option<Vec<u8>> {
     }
 }
 
+/* -------------------------------- Arguments ------------------------------- */
+
 /// A tool to convert Unicode text files between multiple Unicode encodings.
-/// The available encodings are:
-/// * UTF-8
-/// * UTF-16
-/// * UTF-32
-///
+/// The available encodings are UTF-8, UTF-16, and UTF-32.
 /// By default, the data is assumed to be little-endian, but for encodings with
 /// multi-byte words such as UTF-16 or UTF-32, you can add the `_be` suffix to
 /// indicate that you want to work with big-endian data.
