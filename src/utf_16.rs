@@ -9,7 +9,7 @@ use crate::utf_32::Utf32;
 /// A very basic wrapper for UTF-16 encoded data.
 pub struct Utf16 {
     /// The list of UTF-16 encoded bytes.
-    data: Vec<u16>
+    pub data: Vec<u16>, // TODO: not public anymore
 }
 
 /// Push the content of vec2 into vec1

@@ -14,6 +14,10 @@ pub mod utf_8;
 /// The UTF-16 module manipulates UTF-16 data.
 pub mod utf_16;
 
+/// The CESU-8 module handle the __Compatibility Encoding Scheme for
+/// UTF-16: 8-Bit__.
+pub mod cesu_8;
+
 /// This module is used to convert from stream of bytes to streams of numbers
 /// knowing and taking care about the endianness. It works with any number type
 /// that can be bit-cased to u64. It is quite dirty and rely a bit on unsafe
