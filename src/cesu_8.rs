@@ -36,3 +36,20 @@ fn utf_32_glyph_to_cesu_8(glyph: u32) -> Vec<u8> {
     }
 }
 
+/* --------------------------------- Testing -------------------------------- */
+
+#[test]
+fn test_utf_32_glyph_to_cesu_8() {
+    let g1: u32 = 0x0045;
+    let v1: Vec<u8> = vec![0x45];
+    assert_eq!(v1, utf_32_glyph_to_cesu_8(g1));
+
+    let g2: u32 = 0x0205;
+    let v2: Vec<u8> = vec![0xC8, 0x85];
+    assert_eq!(v2, utf_32_glyph_to_cesu_8(g2));
+
+    let g3: u32 = 0x10400;
+    let v3: Vec<u8> = vec![0xED, 0xA0, 0x81, 0xED, 0xB0, 0x80];
+    assert_eq!(v3, utf_32_glyph_to_cesu_8(g3));
+}
+
