@@ -10,7 +10,7 @@ use crate::utf_32::Utf32;
 pub struct Utf8 {
     /// The list of UTF-8 encoded bytes. It also contains 3 null bytes for
     /// padding to ensure we don't access unauthorized memory.
-    data: Vec<u8>
+    pub data: Vec<u8>
 }
 
 impl Utf8 {

@@ -4,15 +4,48 @@
 use crate::unicode_encoding::UnicodeEncodingError::*;
 use crate::unicode_encoding::UnicodeEncodingError;
 use crate::unicode_encoding::UnicodeEncoding;
-use crate::endian_aware_byte_streamer;
 use crate::utf_32::Utf32;
 use crate::utf_16::Utf16;
 use crate::utf_8::Utf8;
 
-/// A very basic wrapper for CESU-8 encoded bytes
+/// A wrapper for CESU-8 encoded bytes
 pub struct Cesu8 {
-    /// The list of CESU-8 encoded bytes.
-    data: Vec<u8>
+    /// As CESU-8 is made of UTF-8 data, it makes sense to reuse the UTF-8 type
+    /// here.
+    data: Utf8,
+}
+
+impl UnicodeEncoding for Cesu8 {
+    /// Convert UTF-32 data to UTF-16.
+    fn from_utf_32(data_utf32: &Utf32)-> Self {
+        let mut data: Vec<u8> = Vec::new();
+        for glyph in &data_utf32.data {
+            let new_bytes = utf_32_glyph_to_cesu_8(*glyph);
+            for byte in new_bytes {
+                data.push(byte);
+            }
+        }
+        return Cesu8{data: Utf8{data: data}};
+    }
+
+    /// Convert CESI-8 to UTF-32.
+    fn to_utf_32(&self) -> Utf32 {
+        return Utf32{data: vec![]};
+    }
+
+    fn to_bytes(&self, big_endian: bool) -> Vec<u8> {
+        return self.data.to_bytes(big_endian);
+    }
+
+    fn from_bytes_no_check(bytes: &[u8], big_endian: bool) -> Result<Self, UnicodeEncodingError> {
+        match Utf8::from_bytes_no_check(bytes, big_endian) {
+            Ok(x) => Ok(Cesu8{data: x}),
+            Err(y) => Err(y),
+        }
+    }
+
+
+
 }
 
 /* ---------------------------- Helper functions ---------------------------- */
