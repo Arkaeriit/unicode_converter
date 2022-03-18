@@ -2,6 +2,13 @@
 
 This repository contains both a library and a CLI tool to convert data between various Unicode encodings.
 
+The supported encodings are:
+
+* UTF-8
+* CESU-8
+* UTF-16
+* UTF-32
+
 ## CLI tool
 
 The CLI tool is meant to be a demonstration of the library but it can be used on its own if needed. It is made in a single file, `str/main.rs`.
