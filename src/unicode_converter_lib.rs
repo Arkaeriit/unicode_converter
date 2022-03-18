@@ -29,6 +29,7 @@ mod test {
     use crate::utf_32::Utf32;
     use crate::utf_16::Utf16;
     use crate::utf_8::Utf8;
+    use crate::cesu_8::Cesu8;
     use crate::unicode_encoding::UnicodeEncoding;
 
 
@@ -43,7 +44,7 @@ mod test {
             }
         }
         let utf32_glyphs = Utf32::from_bytes(random_bytes.as_slice(), false).unwrap();
-        let converted_bytes =utf32_glyphs.to_bytes(false);
+        let converted_bytes = utf32_glyphs.to_bytes(false);
         assert_eq!(converted_bytes, random_bytes);
     }
 
@@ -58,6 +59,9 @@ mod test {
         let utf16 = Utf16::from_string(reference).unwrap();
         let conv_3 = utf16.to_string();
         assert_eq!(reference, conv_3);
+        let cesu8 = Cesu8::from_string(reference).unwrap();
+        let conv_4 = cesu8.to_string();
+        assert_eq!(reference, conv_4);
     }
 
     #[test]

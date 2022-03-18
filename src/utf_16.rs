@@ -114,7 +114,6 @@ pub fn compatible_codepoints(glyph1: u32, glyph2: u32) -> UnicodeEncodingError {
 fn glyph_into_surrogates(glyph: u32) -> (u16, u16) {
     let based_glyph = glyph - SUPPLEMENTARY_PLANE_START;
     let glyph_10_msb = (based_glyph >> 10) as u16;
-    println!("base: {:#x}, msb: {:#x}", based_glyph, glyph_10_msb);
     let glyph_10_lsb = (based_glyph - ((glyph_10_msb as u32) << 10)) as u16;
     let high_surrogate = glyph_10_msb | HIGH_SURROGATE;
     let  low_surrogate = glyph_10_lsb |  LOW_SURROGATE;
