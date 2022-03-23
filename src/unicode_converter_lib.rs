@@ -18,6 +18,9 @@ pub mod utf_16;
 /// UTF-16: 8-Bit__.
 pub mod cesu_8;
 
+/// This module handle the now deprecated UTF-1 encoding.
+pub mod utf_1;
+
 /// This module is used to convert from stream of bytes to streams of numbers
 /// knowing and taking care about the endianness. It works with any number type
 /// that can be bit-cased to u64. It is quite dirty and rely a bit on unsafe
