@@ -8,6 +8,7 @@ The supported encodings are:
 * CESU-8
 * UTF-16
 * UTF-32
+* UTF-1
 
 ## CLI tool
 
@@ -17,7 +18,7 @@ The CLI tool is meant to be a demonstration of the library but it can be used on
 
 ```
 A tool to convert Unicode text files between multiple Unicode encodings. The available encodings are
-UTF-8, CESU-8, UTF-16, and UTF-32. By default, the data is assumed to be little-endian, but for encodings
+UTF-8, UTF-1, CESU-8, UTF-16, and UTF-32. By default, the data is assumed to be little-endian, but for encodings
 with multi-byte words such as UTF-16 or UTF-32, you can add the `_be` suffix to indicate that you
 want to work with big-endian data
 

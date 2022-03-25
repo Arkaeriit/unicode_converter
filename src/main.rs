@@ -4,6 +4,7 @@ use clap::Parser;
 use unicode_converter::unicode_encoding::UnicodeEncodingError;
 use unicode_converter::unicode_encoding::UnicodeEncoding;
 use unicode_converter::utf_8::Utf8;
+use unicode_converter::utf_1::Utf1;
 use unicode_converter::cesu_8::Cesu8;
 use unicode_converter::utf_16::Utf16;
 use unicode_converter::utf_32::Utf32;
@@ -86,6 +87,7 @@ fn try_to_read_with_encoding(filename: &str, encoding: &str)  -> Option<Result<R
     }
     match encoding {
         "UTF-8" => ttrwe_case!(Utf8, false),
+        "UTF-1" => ttrwe_case!(Utf1, false),
         "CESU-8" => ttrwe_case!(Cesu8, false),
         "UTF-16" => ttrwe_case!(Utf16, false),
         "UTF-32" => ttrwe_case!(Utf32, false),
@@ -106,6 +108,7 @@ fn try_to_encode_data(utf32: &Utf32, encoding: &str) -> Option<Vec<u8>> {
     }
     match encoding {
         "UTF-8" => tted_case!(Utf8, false),
+        "UTF-1" => tted_case!(Utf1, false),
         "CESU-8" => tted_case!(Cesu8, false),
         "UTF-16" => tted_case!(Utf16, false),
         "UTF-32" => tted_case!(Utf32, false),
@@ -118,7 +121,7 @@ fn try_to_encode_data(utf32: &Utf32, encoding: &str) -> Option<Vec<u8>> {
 /* -------------------------------- Arguments ------------------------------- */
 
 /// A tool to convert Unicode text files between multiple Unicode encodings.
-/// The available encodings are UTF-8, CESU-8, UTF-16, and UTF-32.
+/// The available encodings are UTF-8, UTF-1, CESU-8, UTF-16, and UTF-32.
 /// By default, the data is assumed to be little-endian, but for encodings with
 /// multi-byte words such as UTF-16 or UTF-32, you can add the `_be` suffix to
 /// indicate that you want to work with big-endian data.
