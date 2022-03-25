@@ -31,8 +31,9 @@ mod endian_aware_byte_streamer;
 mod test {
     use crate::utf_32::Utf32;
     use crate::utf_16::Utf16;
-    use crate::utf_8::Utf8;
     use crate::cesu_8::Cesu8;
+    use crate::utf_8::Utf8;
+    use crate::utf_1::Utf1;
     use crate::unicode_encoding::UnicodeEncoding;
 
 
@@ -65,6 +66,9 @@ mod test {
         let cesu8 = Cesu8::from_string(reference).unwrap();
         let conv_4 = cesu8.to_string();
         assert_eq!(reference, conv_4);
+        let utf1 = Utf1::from_string(reference).unwrap();
+        let conv_5 = utf1.to_string();
+        assert_eq!(reference, conv_5);
     }
 
     #[test]

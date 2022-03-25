@@ -1,5 +1,56 @@
 /// This module handle the now deprecated UTF-1 encoding.
 
+//use crate::unicode_encoding::UnicodeEncodingError::*;
+use crate::unicode_encoding::UnicodeEncodingError;
+use crate::unicode_encoding::UnicodeEncoding;
+use crate::utf_32::Utf32;
+
+/// A very basic wrapper for UTF-1 encoded data.
+pub struct Utf1 {
+    pub data: Vec<u8>
+}
+
+impl UnicodeEncoding for Utf1 {
+    /// Convert UTF-32 data to UTF-1.
+    fn from_utf_32(data_utf_32: &Utf32) -> Self {
+        let mut data: Vec<u8> = Vec::new();
+        for glyph in &data_utf_32.data {
+            for new_byte in utf_32_glyph_to_utf_1(*glyph) {
+                data.push(new_byte);
+            }
+        }
+        let utf = Utf1{data: data};
+        return utf;
+    }
+
+    /// Convert UFT-1 data to UTF-32.
+    fn to_utf_32(&self) -> Utf32 {
+        let mut index: usize = 0;
+        let mut data: Vec<u32> = Vec::new();
+        while index < self.data.len() {
+            let (glyph, len) = utf_1_glyph_to_utf_32(&self.data, index);
+            data.push(glyph);
+            index += len;
+        }
+        return Utf32{data: data};
+    }
+
+    /// Convert the instance of `Utf1` type to a vector of byte.
+    /// No transformation is needed.
+    fn to_bytes(&self, _big_endian: bool) -> Vec<u8> {
+        let ret = self.data.clone();
+        return ret;
+    }
+
+    /// Consider a stream of UTF-1 encoded byte and turn it into a `Utf8` type.
+    /// It only copies the bytes
+    fn from_bytes_no_check(bytes: &[u8], _big_endian: bool) -> Result<Self, UnicodeEncodingError> {
+        let ret = Utf1{data: bytes.to_vec()};
+        return Ok(ret);
+    }
+    
+}
+
 /* ---------------------------- Helper functions ---------------------------- */
 
 // The source used to make this code is here: https://web.archive.org/web/20150318032101/http://kikaku.itscj.ipsj.or.jp/ISO-IR/178.pdf
