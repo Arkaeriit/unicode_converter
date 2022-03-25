@@ -160,7 +160,7 @@ fn utf_32_glyph_to_utf_8(glyph: u32) -> Vec<u8> {
     return ret;
 }
 
-/// Convert an UTF-8 glyph into UTF-32 and tells how much bytes are making this
+/// Convert an UTF-8 glyph into UTF-32 and tells how many bytes are making this
 /// glyph.
 /// The inputs are a stream of UTF-8 encoded data and the index of the
 /// beginning of the new glyph. The return value are the number of char used to
