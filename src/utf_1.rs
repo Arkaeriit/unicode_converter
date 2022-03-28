@@ -1,6 +1,6 @@
 /// This module handle the now deprecated UTF-1 encoding.
 
-//use crate::unicode_encoding::UnicodeEncodingError::*;
+use crate::unicode_encoding::UnicodeEncodingError::*;
 use crate::unicode_encoding::UnicodeEncodingError;
 use crate::unicode_encoding::UnicodeEncoding;
 use crate::utf_32::Utf32;
@@ -8,6 +8,23 @@ use crate::utf_32::Utf32;
 /// A very basic wrapper for UTF-1 encoded data.
 pub struct Utf1 {
     pub data: Vec<u8>
+}
+
+impl Utf1 {
+    /// Goes through a whole UTF-1 data to ensure that it is valid.
+    fn check_sanity_utf1(&self) -> UnicodeEncodingError {
+        let mut index: usize = 0;
+        while index < self.data.len() {
+            let (_glyph, len) = match utf_1_glyph_to_utf_32(&self.data, index) {
+                Err(x) => {return x;},
+                Ok(x) => x,
+            };
+            index += len;
+            check_index_ok(index, &self.data);
+        }
+        return NoError;
+    }
+
 }
 
 impl UnicodeEncoding for Utf1 {
@@ -28,9 +45,13 @@ impl UnicodeEncoding for Utf1 {
         let mut index: usize = 0;
         let mut data: Vec<u32> = Vec::new();
         while index < self.data.len() {
-            let (glyph, len) = utf_1_glyph_to_utf_32(&self.data, index);
+            let (glyph, len) = match utf_1_glyph_to_utf_32(&self.data, index) {
+                Err(_) => {panic!("[UNICODE ENCODING ERROR] Invalid UTF-1 glyph. This should not have happen as a MissingEncodedBytes should have been raised earlier..");},
+                Ok(x) => x,
+            };
             data.push(glyph);
             index += len;
+            check_index_ok(index, &self.data);
         }
         return Utf32{data: data};
     }
@@ -46,7 +67,10 @@ impl UnicodeEncoding for Utf1 {
     /// It only copies the bytes
     fn from_bytes_no_check(bytes: &[u8], _big_endian: bool) -> Result<Self, UnicodeEncodingError> {
         let ret = Utf1{data: bytes.to_vec()};
-        return Ok(ret);
+        match ret.check_sanity_utf1() {
+            NoError =>  Ok(ret),
+            x => Err(x),
+        }
     }
     
 }
@@ -136,31 +160,52 @@ fn uu(z: u8) -> u32 {
 /// beginning of the new glyph. The return value are the number of char used to
 /// encode the glyph.
 /// If the glyph does not makes sense, an error will be raised.
-fn utf_1_glyph_to_utf_32(utf1_data: &Vec<u8>, start: usize) -> (u32, usize) {
+fn utf_1_glyph_to_utf_32(utf1_data: &Vec<u8>, start: usize) -> Result<(u32, usize), UnicodeEncodingError> {
     let first_byte = utf1_data[start] as u8;
     if first_byte < FIRST_CATEGORY_SEQUENCE_LIMIT as u8 {
-        return (first_byte as u32, 1);
+        return Ok((first_byte as u32, 1));
     } else if first_byte == FIRST_CATEGORY_SEQUENCE_LIMIT as u8 {
-        return (utf1_data[start+1] as u32, 2);
+        if utf1_data.len() < start + 2 {
+            return Err(MissingEncodedBytes);
+        }
+        return Ok((utf1_data[start+1] as u32, 2));
     } else if first_byte < SECOND_CATEGORY_SEQUENCE_LIMIT as u8 {
+        if utf1_data.len() < start + 2 {
+            return Err(MissingEncodedBytes);
+        }
         let mut ret = ((first_byte as u32)- 1 - FIRST_CATEGORY_SEQUENCE_LIMIT) * UTF_1_MODULO;
         ret += uu(utf1_data[start+1]);
         ret += SECOND_CATEGORY_GLYPH_LIMIT;
-        return (ret, 2);
+        return Ok((ret, 2));
     } else if first_byte < THIRD_CATEGORY_SEQUENCE_LIMIT as u8 {
+        if utf1_data.len() < start + 3 {
+            return Err(MissingEncodedBytes);
+        }
         let mut ret = ((first_byte as u32) - SECOND_CATEGORY_SEQUENCE_LIMIT) * UTF_1_MODULO * UTF_1_MODULO;
         ret += uu(utf1_data[start+1]) * UTF_1_MODULO;
         ret += uu(utf1_data[start+2]);
         ret += THIRD_CATEGORY_GLYPH_LIMIT;
-        return (ret, 3);
+        return Ok((ret, 3));
     } else {
+        if utf1_data.len() < start + 5 {
+            return Err(MissingEncodedBytes);
+        }
         let mut ret = ((first_byte as u32) - THIRD_CATEGORY_SEQUENCE_LIMIT) * UTF_1_MODULO * UTF_1_MODULO * UTF_1_MODULO * UTF_1_MODULO;
         ret += uu(utf1_data[start+1]) * UTF_1_MODULO * UTF_1_MODULO * UTF_1_MODULO;
         ret += uu(utf1_data[start+2]) * UTF_1_MODULO * UTF_1_MODULO;
         ret += uu(utf1_data[start+3]) * UTF_1_MODULO;
         ret += uu(utf1_data[start+4]);
         ret += FOURTH_CATEGORY_GLYPH_LIMIT;
-        return (ret, 5);
+        return Ok((ret, 5));
+    }
+}
+
+/// Ensure that an index that is going to be used is not too big. If so, a
+/// panic is caused. This should not be needed as there is already checks to
+/// ensure that there is no missing bytes in UTF-1 glyphs.
+fn check_index_ok(index: usize, bytes: &Vec<u8>) {
+    if index > bytes.len() {
+        panic!("[UNICODE ENCODING ERROR] Some bytes are missing to encode of glyph. This is a library issue as a MissingEncodedBytes error should have been raised earlier in that case.\n");
     }
 }
 
@@ -210,7 +255,7 @@ fn test_u_v() {
 fn test_utf_32_to_utf_1_and_back() {
     fn double_conv(glyph: u32) {
         let conv = utf_32_glyph_to_utf_1(glyph);
-        let (conv_back, size) = utf_1_glyph_to_utf_32(&conv, 0);
+        let (conv_back, size) = utf_1_glyph_to_utf_32(&conv, 0).unwrap();
         assert_eq!(glyph, conv_back);
         assert_eq!(size, conv.len());
     }
