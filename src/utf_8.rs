@@ -8,16 +8,13 @@ use crate::utf_32::Utf32;
 
 /// A very basic wrapper for UTF-8 encoded data.
 pub struct Utf8 {
-    /// The list of UTF-8 encoded bytes. It also contains 3 null bytes for
-    /// padding to ensure we don't access unauthorized memory.
     pub data: Vec<u8>
 }
 
 impl Utf8 {
     /// Converts a Rust String into `Utf8` struct.
     pub fn from_string(s: &str) -> Result<Self, UnicodeEncodingError> {
-        let mut utf = Utf8{data: s.to_string().as_bytes().to_vec()};
-        pad_with_0(&mut utf.data);
+        let utf = Utf8{data: s.to_string().as_bytes().to_vec()};
         match utf.check_sanity() {
             NoError => return Ok(utf),
             x => return Err(x),
@@ -26,8 +23,7 @@ impl Utf8 {
 
     /// Converts a `Utf8` struct to a Rust string
     pub fn to_string(&self) -> String {
-        let mut bytes = self.data.clone();
-        remove_pad_with_0(&mut bytes);
+        let bytes = self.data.clone();
         let ret = std::str::from_utf8(&bytes).unwrap().to_string(); // As we are manipulating sanitized UTF-8 data it _should_ be OK to use unwrap here.
         return ret;
     }
@@ -35,12 +31,13 @@ impl Utf8 {
     /// Goes through a whole UTF-8 data to ensure that it is valid.
     fn check_sanity_utf8(&self) -> UnicodeEncodingError {
         let mut index: usize = 0;
-        while self.data[index] != 0 {
+        while index < self.data.len() {
             let (_glyph, len) = match utf_8_glyph_to_utf_32(&self.data, index) {
                 Err(x) => {return x;},
                 Ok(x) => x,
             };
             index += len;
+            check_index_ok(index, &self.data);
         }
         return NoError;
     }
@@ -57,8 +54,7 @@ impl UnicodeEncoding for Utf8 {
                 data.push(new_byte);
             }
         }
-        let mut utf = Utf8{data: data};
-        pad_with_0(&mut utf.data);
+        let utf = Utf8{data: data};
         return utf;
     }
 
@@ -66,33 +62,29 @@ impl UnicodeEncoding for Utf8 {
     fn to_utf_32(&self) -> Utf32 {
         let mut index: usize = 0;
         let mut data: Vec<u32> = Vec::new();
-        while self.data[index] != 0 {
+        while index < self.data.len() {
             let (glyph, len) = match utf_8_glyph_to_utf_32(&self.data, index) {
                 Err(_) => {panic!("[UNICODE ENCODING ERROR] Invalid UTF-8 glyph. This should not have happen if the source was safely generated with from_string or from_bytes. This could happen if from_string_no_check was used. This need to be corrected from the library's user side.");},
                 Ok(x) => x,
             };
             data.push(glyph);
             index += len;
+            check_index_ok(index, &self.data);
         }
         return Utf32{data: data};
     }
 
-    /// Convert the instance of `Utf8` type to a vector of byte. The only
-    /// transformation needed is to remove the 3 padding bytes.
+    /// Convert the instance of `Utf8` type to a vector of byte.
+    /// No transformation is needed.
     fn to_bytes(&self, _big_endian: bool) -> Vec<u8> {
-        let mut ret = self.data.clone();
-        if ret.len() < 3 {
-            panic!("[UNICODE CONVERTER INTERNAL ERROR] An Utf8 instance in not properly formed. It is missing 3 padding bytes. This should not happen as the Utf8 instance should all be padded with 0.");
-        }
-        remove_pad_with_0(&mut ret);
+        let ret = self.data.clone();
         return ret;
     }
 
     /// Consider a stream of UTF-8 encoded byte and turn it into a `Utf8` type.
-    /// It only copies the bytes and then, add the 3 null bytes for padding.
+    /// It only copies the bytes.
     fn from_bytes_no_check(bytes: &[u8], _big_endian: bool) -> Result<Self, UnicodeEncodingError> {
-        let mut ret = Utf8{data: bytes.to_vec()};
-        pad_with_0(&mut ret.data);
+        let ret = Utf8{data: bytes.to_vec()};
         match ret.check_sanity_utf8() {
             NoError => {return Ok(ret);},
             x => {return Err(x)},
@@ -179,6 +171,9 @@ fn utf_8_glyph_to_utf_32(utf8_data: &Vec<u8>, start: usize) -> Result<(u32, usiz
     if glyph_len == 0 {
         return Err(InvalidUtf8Prefix);
     }
+    if glyph_len + start > utf8_data.len() {
+        return Err(MissingEncodedBytes);
+    }
     for i in 1..glyph_len {
         if utf8_data[start+i] & CNT_BYTE_GLYPH_MASK != CNT_BYTE_GLYPH_CODE {
             return Err(IncoherentUtf8Codepoint);
@@ -189,21 +184,12 @@ fn utf_8_glyph_to_utf_32(utf8_data: &Vec<u8>, start: usize) -> Result<(u32, usiz
     return Ok((glyph, glyph_len));
 }
 
-/// Adds 3 null bytes at the end of the UTF-8 encoded data.
-fn pad_with_0(data: &mut Vec<u8>) {
-    for _ in 0..3 {
-        data.push(0);
-    }
-}
-
-/// Remove 3 null bytes from a vector of bytes.
-fn remove_pad_with_0(v: &mut Vec<u8>) {
-    for _ in 0..3 {
-        match v.pop() {
-            None => {panic!("[UNICODE CONVERTER INTERNAL ERROR] An Utf8 instance in not properly formed. It is missing 3 padding bytes. This should not happen as the Utf8 instance should all be padded with 0.");}
-            Some(0) => {}
-            Some(_) => {panic!("[UNICODE CONVERTER INTERNAL ERROR] An Utf8 instance does not ends with 3 padding bytes. This should not have happened.");}
-        }
+/// Ensure that an index that is going to be used is not too big. If so, a
+/// panic is caused. This should not be needed as there is already checks to
+/// ensure that there is no missing bytes in UTF-8 glyphs.
+fn check_index_ok(index: usize, bytes: &Vec<u8>) {
+    if index > bytes.len() {
+        panic!("[UNICODE ENCODING ERROR] Some bytes are missing to encode of glyph. This is a library issue as a MissingEncodedBytes error should have been raised earlier in that case.\n");
     }
 }
 
@@ -261,5 +247,35 @@ fn test_utf_32_to_utf_8_raw() {
     simple_conv(0x001000, vec![0xE1, 0x80, 0x80]);
     simple_conv(0x010400, vec![0xF0, 0x90, 0x90, 0x80]);
     simple_conv(0x10FFFF, vec![0xF4, 0x8F, 0xBF, 0xBF]);
+}
+
+#[test]
+/// Test that various code-points are converted right both ways.
+fn test_utf_32_to_utf_8_and_back_plus() {
+    fn double_conv(glyph: u32) {
+        let conv = utf_32_glyph_to_utf_8(glyph);
+        let (conv_back, size) = utf_8_glyph_to_utf_32(&conv, 0).unwrap();
+        assert_eq!(conv_back, glyph);
+        assert_eq!(conv.len(), size);
+    }
+    double_conv(0x000045);
+    double_conv(0x00007F);
+    double_conv(0x000080);
+    double_conv(0x00009F);
+    double_conv(0x0000A0);
+    double_conv(0x0000BF);
+    double_conv(0x0000C0);
+    double_conv(0x0000FF);
+    double_conv(0x000100);
+    double_conv(0x00015D);
+    double_conv(0x0001BD);
+    double_conv(0x0001BE);
+    double_conv(0x000205);
+    double_conv(0x0007FF);
+    double_conv(0x000800);
+    double_conv(0x000FFF);
+    double_conv(0x001000);
+    double_conv(0x010400);
+    double_conv(0x10FFFF);
 }
 

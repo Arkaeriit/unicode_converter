@@ -124,5 +124,9 @@ pub enum UnicodeEncodingError {
 
     /// Used internally to managed unpaired surrogate.
     UnpairedSurrogateNotification,
+
+    /// For variable length encoding such as UTF-8, there is not enough bytes
+    /// to finish a glyph.
+    MissingEncodedBytes,
 }
 
