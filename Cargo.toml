@@ -1,10 +1,12 @@
 [package]
 name = "unicode_converter"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["Maxime Bouillot maxbouillot@gmail.com"]
 license = "BSD-3-Clause"
 description = "A library and a CLI tool to convert data between various Unicode encodings."
+documentation = "https://docs.rs/unicode_converter"
+
 
 [lib]
 name = "unicode_converter"
