@@ -1,7 +1,6 @@
 /// This module is used to convert from stream of bytes to streams of numbers
 /// knowing and taking care about the endianness. It works with any number type
-/// that can be bit-cased to u64. It is quite dirty and rely a bit on unsafe
-/// code.
+/// that can be bit-cased to u64.
 
 use crate::unicode_encoding::UnicodeEncodingError::*;
 use crate::unicode_encoding::UnicodeEncodingError;
@@ -11,7 +10,7 @@ use std::mem::size_of;
 
 /// Cut an integer into a vector of bytes by considering that the number
 /// is little endian.
-fn cut_int<T>(n: T) -> Vec<u8> {
+fn cut_int<T>(n: T) -> Vec<u8>  where u64: From<T> {
 
     /// Cut an u64 into a vector of bytes but only consider the bytes included
     /// in the size of U.
@@ -23,26 +22,7 @@ fn cut_int<T>(n: T) -> Vec<u8> {
         return ret;
     }
 
-    /// Converts in an unsafe way as an u64. There might be a better way to do
-    /// that.
-    fn conv_to_u64<U>(n: U) -> u64 {
-        let pnt: *const U = &n;
-        let pnt_u64: *const u64 = pnt as *const u64;
-        let ret: u64;
-        unsafe {
-            ret = *pnt_u64;
-        }
-        let mask;
-        if size_of::<U> as usize == size_of::<u64> as usize { // Prevent mask overflow if working with u64.
-            mask = !0;
-        } else {
-            mask = (1 << (size_of::<U>() * 8)) - 1;
-        }
-        return ret & mask;
-    }
-
-    let n64 = conv_to_u64::<T>(n);
-    return cut_int_as_u64::<T>(n64);
+    return cut_int_as_u64::<T>(n.into());
 }
 
 /// Generates an array of indexes used to index the result of cut_int depending
@@ -65,7 +45,7 @@ fn gen_endian_indexes<T>(big_endian: bool) -> Vec<usize> {
 
 /// Converts a vector of numbers into a vector of bytes that is ordered with
 /// the correct endianess.
-pub fn to_bytes<T: Copy + TryFrom<u64>>(data: &Vec<T>, big_endian: bool) -> Vec<u8> {
+pub fn to_bytes<T: Copy>(data: &Vec<T>, big_endian: bool) -> Vec<u8>  where u64: From<T> {
     let mut ret: Vec<u8> = Vec::new();
     let endian_index = gen_endian_indexes::<T>(big_endian);
     for number in data {
@@ -90,7 +70,7 @@ pub fn from_bytes<T: Copy + TryFrom<u64> + std::fmt::Debug>(bytes: &[u8], big_en
         for j in 0..len_t {
             new_number |= (bytes[i*len_t + endian_index[j]] as u64) << (j * 8);
         }
-        let new_push: T = std::convert::TryFrom::<u64>::try_from(new_number).expect("A type bigger than u64 have been used for unsafe type conversion. This is very bad.");
+        let new_push: T = std::convert::TryFrom::<u64>::try_from(new_number).expect("A type bigger than u64 have been used for conversions assuming that it was not. This is very bad.");
         ret.push(new_push);
     }
     return Ok(ret);
